@@ -6,16 +6,14 @@ from google.cloud import documentai_v1beta3 as documentai
 
 def get_entity_text(entity):
     """Safely extracts text from a Document AI entity."""
-    # Prioritize normalized text if available (often better for amounts, dates)
     if entity and entity.normalized_value and entity.normalized_value.text:
         return entity.normalized_value.text.strip()
-    # Fallback to the mentioned text
     if entity and entity.mention_text:
         return entity.mention_text.strip()
-    return None  # Return None if neither is found
+    return None
 
 
-def process_receipt(image_file, project_id, location, processor_id):
+def process_receipt(image_file, credentials, project_id, location, processor_id):
     """
     Processes a receipt image using Google Cloud Document AI Receipt Processor.
     """
@@ -24,8 +22,11 @@ def process_receipt(image_file, project_id, location, processor_id):
             st.error("Missing required Document AI configuration (project_id, location, processor_id).")
             return None
 
-        opts = {"api_endpoint": f"{location}-documentai.googleapis.com"}
-        client = documentai.DocumentProcessorServiceClient(client_options=opts)
+        client_options = {"api_endpoint": f"{location}-documentai.googleapis.com"}
+        client = documentai.DocumentProcessorServiceClient(
+            client_options=client_options,
+            credentials=credentials
+        )
         name = client.processor_path(project_id, location, processor_id)
 
         image_content = image_file.getvalue()
@@ -37,20 +38,16 @@ def process_receipt(image_file, project_id, location, processor_id):
             mime_type = "image/png"
         elif file_extension in [".tif", ".tiff"]:
             mime_type = "image/tiff"
+        elif file_extension == ".pdf":
+            mime_type = "application/pdf"
         else:
             st.error(
-                f"Unsupported file type: {file_extension}. Please upload JPG, PNG, or TIFF."
+                f"Unsupported file type: {file_extension}. Please upload JPG, PNG, TIFF, or PDF."
             )
             return None
 
-        raw_document = documentai.RawDocument(
-            content=image_content, mime_type=mime_type
-        )
-        request = documentai.ProcessRequest(
-            name=name,
-            raw_document=raw_document,
-        )
-
+        raw_document = documentai.RawDocument(content=image_content, mime_type=mime_type)
+        request = documentai.ProcessRequest(name=name, raw_document=raw_document)
         result = client.process_document(request=request)
         document = result.document
 
@@ -60,7 +57,6 @@ def process_receipt(image_file, project_id, location, processor_id):
         if not document.text:
             st.warning("Document AI did not extract any text (OCR failed). Check image quality.")
 
-        # Optional: Calculate average confidence from entities if needed
         average_confidence = None
         if document.entities:
             confidences = [entity.confidence for entity in document.entities if hasattr(entity, "confidence")]
@@ -74,7 +70,7 @@ def process_receipt(image_file, project_id, location, processor_id):
             "total_tax_amount": None,
             "total_discount_amount": None,
             "total_amount": None,
-            "ocr_confidence": average_confidence,  # Now using average from entities
+            "ocr_confidence": average_confidence,
         }
 
         entity_count = 0
