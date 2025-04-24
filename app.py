@@ -1,26 +1,18 @@
 import os
 import streamlit as st
-
-# import yaml
-# from utils.load_config import load_docai_config
 from utils.process_receipt import process_receipt
 from utils.display_data import display_receipt_data
+from google.oauth2 import service_account
 
 
-def set_google_credentials_from_upload(key_file):
+def get_credentials_from_upload(key_file):
     try:
-        key_path = "./tmp/service_account.json"
-        with open(key_path, "wb") as f:
-            f.write(key_file.read())
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
-        st.session_state["google_credentials_path"] = key_path
-        return True
+        key_json = json.load(key_file)
+        credentials = service_account.Credentials.from_service_account_info(key_json)
+        return credentials, key_json  # Return both for reuse
     except Exception as e:
-        st.error(f"Failed to set credentials from uploaded key: {e}")
-        return False
-    except Exception as e:
-        st.error(f"Unexpected error: {e}")
-        return False
+        st.error(f"Failed to load service account: {e}")
+        return None, None
 
 
 # --- Main App ---
