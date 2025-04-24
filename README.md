@@ -30,6 +30,10 @@ python -m venv venv
 ```
 source venv/bin/activate # On Windows: venv\Scripts\activate
 ```  
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 ```
 pip install -r requirements.txt
 ```
@@ -55,9 +59,23 @@ Running the Application locally:
   streamlit run app.py
   ```
 
+<<<<<<< Updated upstream
 3. Then open your browser to the URL provided by Streamlit (typically http://localhost:8501)
 
 ## Usage
+=======
+## Running the Application
+Run the application with:
+
+```
+streamlit run app.py
+```
+
+
+Then open your browser to the URL provided by Streamlit (typically http://localhost:8501)
+
+Usage
+>>>>>>> Stashed changes
 Open the application in your browser
 Enter your Google Cloud settings in the sidebar:
 1. Project ID
